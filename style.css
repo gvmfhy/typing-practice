@@ -416,6 +416,14 @@ body {
   margin-top: 8px;
   font-size: 11px;
   color: var(--text-muted);
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.text-item-source {
+  font-style: italic;
+  color: var(--text-secondary);
+  font-size: 10px;
 }
 
 /* Custom text panel */

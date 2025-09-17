@@ -56,78 +56,106 @@ class TypingEngine {
                 id: 'pride-prejudice-1',
                 title: 'Pride and Prejudice - Opening',
                 author: 'Jane Austen',
+                source: 'Public Domain (1813)',
                 category: 'literature',
                 difficulty: 'medium',
                 text: 'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.'
             },
             {
-                id: 'gatsby-1',
-                title: 'The Great Gatsby - Opening',
-                author: 'F. Scott Fitzgerald',
+                id: 'notes-underground',
+                title: 'Notes from Underground - Opening',
+                author: 'Fyodor Dostoevsky',
+                source: 'Trans. Pevear & Volokhonsky (Fair Use)',
                 category: 'literature',
                 difficulty: 'medium',
-                text: 'In my younger and more vulnerable years my father gave me some advice that I\'ve carried with me ever since. "Whenever you feel like criticizing any one," he told me, "just remember that all the people in this world haven\'t had the advantages that you\'ve had."'
+                text: 'I am a sick man... I am a spiteful man. I am an unattractive man. I think my liver is diseased. However, I don\'t know beans about my disease, and I am not sure what is bothering me.'
+            },
+            {
+                id: 'havel-power-powerless',
+                title: 'The Power of the Powerless',
+                author: 'Václav Havel',
+                source: '1978 Essay (Fair Use Educational)',
+                category: 'philosophy',
+                difficulty: 'hard',
+                text: 'Ideology is a specious way of relating to the world. It offers human beings the illusion of an identity, of dignity, and of morality while making it easier for them to part with them.'
+            },
+            {
+                id: 'havel-hope',
+                title: 'Disturbing the Peace - On Hope',
+                author: 'Václav Havel',
+                source: 'Autobiography Interview (Fair Use)',
+                category: 'philosophy',
+                difficulty: 'medium',
+                text: 'Hope is not prognostication. It is an orientation of the spirit, an orientation of the heart. Either we have hope within us, or we don\'t.'
             },
             {
                 id: 'orwell-1984',
                 title: '1984 - Opening',
                 author: 'George Orwell',
+                source: 'Published 1949 (Fair Use)',
                 category: 'literature',
                 difficulty: 'medium',
                 text: 'It was a bright cold day in April, and the clocks were striking thirteen. Winston Smith, his chin nuzzled into his breast in an effort to escape the vile wind, slipped quickly through the glass doors of Victory Mansions, though not quickly enough to prevent a swirl of gritty dust from entering along with him.'
             },
             {
-                id: 'hemingway-sun',
-                title: 'The Sun Also Rises',
-                author: 'Ernest Hemingway',
-                category: 'literature',
-                difficulty: 'easy',
-                text: 'Robert Cohn was once middleweight boxing champion of Princeton. Do not think that I am very much impressed by that as boxing is of no interest to me. In fact, I dislike it. But it meant a lot to Cohn.'
-            },
-            {
                 id: 'thoreau-walden',
-                title: 'Walden - Economy',
+                title: 'Walden - Deliberately',
                 author: 'Henry David Thoreau',
+                source: 'Public Domain (1854)',
                 category: 'philosophy',
                 difficulty: 'hard',
-                text: 'I went to the woods to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived. I did not wish to live what was not life, living is so dear; nor did I wish to practise resignation, unless it was quite necessary.'
+                text: 'I went to the woods to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived.'
             },
             {
                 id: 'descartes-cogito',
-                title: 'Discourse on Method',
+                title: 'Discourse on Method - Cogito',
                 author: 'René Descartes',
+                source: 'Public Domain (1637)',
                 category: 'philosophy',
                 difficulty: 'hard',
-                text: 'I think, therefore I am. But immediately upon this I observed that, whilst I thus wished to think that all was false, it was absolutely necessary that I, who thus thought, should be somewhat; and as I observed that this truth, I think, therefore I am, was so certain and of such evidence that no ground of doubt, however extravagant, could be alleged by the sceptics capable of shaking it.'
+                text: 'I think, therefore I am. But immediately upon this I observed that, whilst I thus wished to think that all was false, it was absolutely necessary that I, who thus thought, should be somewhat.'
             },
             {
                 id: 'frost-road',
                 title: 'The Road Not Taken',
                 author: 'Robert Frost',
+                source: 'Public Domain (1916)',
                 category: 'poetry',
                 difficulty: 'easy',
                 text: 'Two roads diverged in a yellow wood, and sorry I could not travel both and be one traveler, long I stood and looked down one as far as I could to where it bent in the undergrowth.'
             },
             {
                 id: 'shakespeare-hamlet',
-                title: 'Hamlet - To be or not to be',
+                title: 'Hamlet - Soliloquy',
                 author: 'William Shakespeare',
+                source: 'Public Domain (1603)',
                 category: 'poetry',
                 difficulty: 'medium',
                 text: 'To be, or not to be, that is the question: Whether \'tis nobler in the mind to suffer the slings and arrows of outrageous fortune, or to take arms against a sea of troubles, and by opposing end them.'
             },
             {
+                id: 'dickens-tale',
+                title: 'A Tale of Two Cities - Opening',
+                author: 'Charles Dickens',
+                source: 'Public Domain (1859)',
+                category: 'literature',
+                difficulty: 'medium',
+                text: 'It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness.'
+            },
+            {
                 id: 'tech-algorithms',
-                title: 'Introduction to Algorithms',
-                author: 'Technical Writing',
+                title: 'Algorithm Definition',
+                author: 'Computer Science',
+                source: 'Academic Definition',
                 category: 'technical',
                 difficulty: 'hard',
                 text: 'An algorithm is a finite sequence of well-defined, computer-implementable instructions, typically to solve a class of problems or to perform a computation. Algorithms are unambiguous specifications for performing calculation, data processing, automated reasoning, and other tasks.'
             },
             {
                 id: 'tech-javascript',
-                title: 'JavaScript Fundamentals',
-                author: 'Technical Writing',
+                title: 'JavaScript Overview',
+                author: 'Programming',
+                source: 'Technical Definition',
                 category: 'technical',
                 difficulty: 'medium',
                 text: 'JavaScript is a high-level, interpreted programming language that conforms to the ECMAScript specification. JavaScript has curly-bracket syntax, dynamic typing, prototype-based object-orientation, and first-class functions.'
@@ -261,6 +289,7 @@ class TypingEngine {
             <div class="text-item-meta">
                 <span>${wordsCount} words</span>
                 <span>${difficulty}</span>
+                <span class="text-item-source">${text.source}</span>
             </div>
         `;
 
