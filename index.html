@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer's Practice</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">Writer's Practice</h1>
+                <div class="controls">
+                    <button class="btn-secondary" id="resetBtn" title="Reset current text (⌘R)" disabled>Reset</button>
+                    <button class="btn-secondary" id="loadTextBtn">Choose Text</button>
+                    <button class="btn-icon" id="darkModeToggle" title="Toggle dark mode (⌘D)">
+                        <span class="icon-moon">🌙</span>
+                        <span class="icon-sun">☀️</span>
+                    </button>
+                </div>
+            </div>
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-label">WPM</span>
+                    <span class="stat-value" id="wpm">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Accuracy</span>
+                    <span class="stat-value" id="accuracy">100%</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Progress</span>
+                    <span class="stat-value" id="progress">0%</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="text-input-overlay" id="textInputOverlay">
+                <div class="text-input-modal">
+                    <div class="modal-header">
+                        <h2>Choose Your Text</h2>
+                        <div class="tab-switcher">
+                            <button class="tab-btn active" id="libraryTab">Library</button>
+                            <button class="tab-btn" id="customTab">Custom Text</button>
+                            <button class="tab-btn" id="savedTab">Saved Texts</button>
+                        </div>
+                    </div>
+
+                    <div class="tab-content">
+                        <!-- Library Tab -->
+                        <div class="tab-panel active" id="libraryPanel">
+                            <div class="text-library">
+                                <div class="library-search">
+                                    <input type="text" id="librarySearch" placeholder="Search texts..." class="search-input">
+                                </div>
+                                <div class="text-categories">
+                                    <button class="category-btn active" data-category="all">All</button>
+                                    <button class="category-btn" data-category="literature">Literature</button>
+                                    <button class="category-btn" data-category="philosophy">Philosophy</button>
+                                    <button class="category-btn" data-category="poetry">Poetry</button>
+                                    <button class="category-btn" data-category="technical">Technical</button>
+                                </div>
+                                <div class="text-list" id="textList">
+                                    <!-- Preloaded texts will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Text Tab -->
+                        <div class="tab-panel" id="customPanel">
+                            <div class="custom-text-input">
+                                <textarea
+                                    id="textInput"
+                                    placeholder="Paste the text you want to practice typing..."
+                                    rows="8"
+                                ></textarea>
+                                <div class="save-options">
+                                    <input type="text" id="textTitle" placeholder="Give this text a title (optional)" class="title-input">
+                                    <label class="save-checkbox">
+                                        <input type="checkbox" id="saveText">
+                                        Save this text for later
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Saved Texts Tab -->
+                        <div class="tab-panel" id="savedPanel">
+                            <div class="saved-texts">
+                                <div class="saved-list" id="savedList">
+                                    <div class="empty-state">
+                                        <p>No saved texts yet. Save custom texts to see them here.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn-secondary" id="cancelBtn">Cancel</button>
+                        <button class="btn-primary" id="loadBtn" disabled>Start Practice</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-area">
+                <div class="text-display" id="textDisplay">
+                    Click "Load Text" to begin your typing practice session.
+                </div>
+                <textarea
+                    class="typing-input"
+                    id="typingInput"
+                    placeholder="Start typing here..."
+                    disabled
+                ></textarea>
+            </div>
+
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="shortcuts">
+                <span class="shortcut">⌘R Reset</span>
+                <span class="shortcut">⌘L Load Text</span>
+                <span class="shortcut">⌘D Dark Mode</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

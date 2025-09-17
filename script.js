@@ -1,0 +1,755 @@
+class TypingEngine {
+    constructor() {
+        // DOM elements
+        this.textDisplay = document.getElementById('textDisplay');
+        this.typingInput = document.getElementById('typingInput');
+        this.textInputOverlay = document.getElementById('textInputOverlay');
+        this.textInput = document.getElementById('textInput');
+        this.loadTextBtn = document.getElementById('loadTextBtn');
+        this.resetBtn = document.getElementById('resetBtn');
+        this.loadBtn = document.getElementById('loadBtn');
+        this.cancelBtn = document.getElementById('cancelBtn');
+        this.darkModeToggle = document.getElementById('darkModeToggle');
+        this.progressFill = document.getElementById('progressFill');
+
+        // New modal elements
+        this.libraryTab = document.getElementById('libraryTab');
+        this.customTab = document.getElementById('customTab');
+        this.savedTab = document.getElementById('savedTab');
+        this.libraryPanel = document.getElementById('libraryPanel');
+        this.customPanel = document.getElementById('customPanel');
+        this.savedPanel = document.getElementById('savedPanel');
+        this.textList = document.getElementById('textList');
+        this.savedList = document.getElementById('savedList');
+        this.librarySearch = document.getElementById('librarySearch');
+        this.textTitle = document.getElementById('textTitle');
+        this.saveText = document.getElementById('saveText');
+
+        // Stats elements
+        this.wpmElement = document.getElementById('wpm');
+        this.accuracyElement = document.getElementById('accuracy');
+        this.progressElement = document.getElementById('progress');
+
+        // State
+        this.originalText = '';
+        this.currentPosition = 0;
+        this.startTime = null;
+        this.totalCharacters = 0;
+        this.correctCharacters = 0;
+        this.incorrectCharacters = 0;
+        this.isTypingStarted = false;
+        this.lastUpdateTime = 0;
+        this.selectedText = null;
+        this.currentTab = 'library';
+
+        // Text library
+        this.textLibrary = this.initializeTextLibrary();
+        this.savedTexts = this.loadSavedTexts();
+
+        // Initialize
+        this.init();
+    }
+
+    initializeTextLibrary() {
+        return [
+            {
+                id: 'pride-prejudice-1',
+                title: 'Pride and Prejudice - Opening',
+                author: 'Jane Austen',
+                category: 'literature',
+                difficulty: 'medium',
+                text: 'It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.'
+            },
+            {
+                id: 'gatsby-1',
+                title: 'The Great Gatsby - Opening',
+                author: 'F. Scott Fitzgerald',
+                category: 'literature',
+                difficulty: 'medium',
+                text: 'In my younger and more vulnerable years my father gave me some advice that I\'ve carried with me ever since. "Whenever you feel like criticizing any one," he told me, "just remember that all the people in this world haven\'t had the advantages that you\'ve had."'
+            },
+            {
+                id: 'orwell-1984',
+                title: '1984 - Opening',
+                author: 'George Orwell',
+                category: 'literature',
+                difficulty: 'medium',
+                text: 'It was a bright cold day in April, and the clocks were striking thirteen. Winston Smith, his chin nuzzled into his breast in an effort to escape the vile wind, slipped quickly through the glass doors of Victory Mansions, though not quickly enough to prevent a swirl of gritty dust from entering along with him.'
+            },
+            {
+                id: 'hemingway-sun',
+                title: 'The Sun Also Rises',
+                author: 'Ernest Hemingway',
+                category: 'literature',
+                difficulty: 'easy',
+                text: 'Robert Cohn was once middleweight boxing champion of Princeton. Do not think that I am very much impressed by that as boxing is of no interest to me. In fact, I dislike it. But it meant a lot to Cohn.'
+            },
+            {
+                id: 'thoreau-walden',
+                title: 'Walden - Economy',
+                author: 'Henry David Thoreau',
+                category: 'philosophy',
+                difficulty: 'hard',
+                text: 'I went to the woods to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived. I did not wish to live what was not life, living is so dear; nor did I wish to practise resignation, unless it was quite necessary.'
+            },
+            {
+                id: 'descartes-cogito',
+                title: 'Discourse on Method',
+                author: 'René Descartes',
+                category: 'philosophy',
+                difficulty: 'hard',
+                text: 'I think, therefore I am. But immediately upon this I observed that, whilst I thus wished to think that all was false, it was absolutely necessary that I, who thus thought, should be somewhat; and as I observed that this truth, I think, therefore I am, was so certain and of such evidence that no ground of doubt, however extravagant, could be alleged by the sceptics capable of shaking it.'
+            },
+            {
+                id: 'frost-road',
+                title: 'The Road Not Taken',
+                author: 'Robert Frost',
+                category: 'poetry',
+                difficulty: 'easy',
+                text: 'Two roads diverged in a yellow wood, and sorry I could not travel both and be one traveler, long I stood and looked down one as far as I could to where it bent in the undergrowth.'
+            },
+            {
+                id: 'shakespeare-hamlet',
+                title: 'Hamlet - To be or not to be',
+                author: 'William Shakespeare',
+                category: 'poetry',
+                difficulty: 'medium',
+                text: 'To be, or not to be, that is the question: Whether \'tis nobler in the mind to suffer the slings and arrows of outrageous fortune, or to take arms against a sea of troubles, and by opposing end them.'
+            },
+            {
+                id: 'tech-algorithms',
+                title: 'Introduction to Algorithms',
+                author: 'Technical Writing',
+                category: 'technical',
+                difficulty: 'hard',
+                text: 'An algorithm is a finite sequence of well-defined, computer-implementable instructions, typically to solve a class of problems or to perform a computation. Algorithms are unambiguous specifications for performing calculation, data processing, automated reasoning, and other tasks.'
+            },
+            {
+                id: 'tech-javascript',
+                title: 'JavaScript Fundamentals',
+                author: 'Technical Writing',
+                category: 'technical',
+                difficulty: 'medium',
+                text: 'JavaScript is a high-level, interpreted programming language that conforms to the ECMAScript specification. JavaScript has curly-bracket syntax, dynamic typing, prototype-based object-orientation, and first-class functions.'
+            }
+        ];
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadTheme();
+        this.initializeStats();
+        this.populateTextLibrary();
+        this.populateSavedTexts();
+        this.focusTypingInput();
+    }
+
+    initializeStats() {
+        this.wpmElement.textContent = '0';
+        this.accuracyElement.textContent = '100%';
+        this.progressElement.textContent = '0%';
+        this.progressFill.style.width = '0%';
+
+        this.wpmElement.style.transition = 'transform 0.15s ease';
+        this.accuracyElement.style.transition = 'transform 0.15s ease, color 0.3s ease';
+        this.progressFill.style.transition = 'width 0.3s ease';
+    }
+
+    setupEventListeners() {
+        // Text loading
+        this.loadTextBtn.addEventListener('click', () => this.showTextInput());
+        this.resetBtn.addEventListener('click', () => this.resetTyping());
+        this.loadBtn.addEventListener('click', () => this.loadSelectedText());
+        this.cancelBtn.addEventListener('click', () => this.hideTextInput());
+
+        // Tab switching
+        this.libraryTab.addEventListener('click', () => this.switchTab('library'));
+        this.customTab.addEventListener('click', () => this.switchTab('custom'));
+        this.savedTab.addEventListener('click', () => this.switchTab('saved'));
+
+        // Library search and filtering
+        this.librarySearch.addEventListener('input', () => this.filterLibrary());
+
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.filterByCategory(e.target.dataset.category));
+        });
+
+        // Dark mode toggle
+        this.darkModeToggle.addEventListener('click', () => this.toggleDarkMode());
+
+        // Typing input
+        this.typingInput.addEventListener('input', (e) => this.handleInput(e));
+        this.typingInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+        // Custom text input changes
+        this.textInput.addEventListener('input', () => this.updateLoadButton());
+
+        // Click anywhere to focus typing input
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('button') && !e.target.closest('.text-input-modal')) {
+                this.focusTypingInput();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.metaKey || e.ctrlKey) {
+                switch(e.key.toLowerCase()) {
+                    case 'l':
+                        e.preventDefault();
+                        this.showTextInput();
+                        break;
+                    case 'r':
+                        e.preventDefault();
+                        this.resetTyping();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        this.toggleDarkMode();
+                        break;
+                }
+            }
+        });
+
+        // Close modal on escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.hideTextInput();
+            }
+        });
+    }
+
+    // Tab Management
+    switchTab(tabName) {
+        this.currentTab = tabName;
+
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+
+        // Activate selected tab
+        document.getElementById(`${tabName}Tab`).classList.add('active');
+        document.getElementById(`${tabName}Panel`).classList.add('active');
+
+        this.updateLoadButton();
+    }
+
+    // Text Library Management
+    populateTextLibrary() {
+        this.textList.innerHTML = '';
+
+        this.textLibrary.forEach(text => {
+            const item = this.createTextItem(text);
+            this.textList.appendChild(item);
+        });
+    }
+
+    createTextItem(text) {
+        const item = document.createElement('div');
+        item.className = 'text-item';
+        item.dataset.id = text.id;
+
+        const wordsCount = text.text.split(' ').length;
+        const difficulty = text.difficulty === 'easy' ? '●○○' :
+                          text.difficulty === 'medium' ? '●●○' : '●●●';
+
+        item.innerHTML = `
+            <div class="text-item-title">${text.title}</div>
+            <div class="text-item-author">${text.author}</div>
+            <div class="text-item-preview">${text.text.substring(0, 120)}...</div>
+            <div class="text-item-meta">
+                <span>${wordsCount} words</span>
+                <span>${difficulty}</span>
+            </div>
+        `;
+
+        item.addEventListener('click', () => this.selectLibraryText(text));
+
+        return item;
+    }
+
+    selectLibraryText(text) {
+        // Clear previous selection
+        document.querySelectorAll('.text-item').forEach(item => item.classList.remove('selected'));
+        document.querySelectorAll('.saved-item').forEach(item => item.classList.remove('selected'));
+
+        // Select this item
+        document.querySelector(`[data-id="${text.id}"]`).classList.add('selected');
+        this.selectedText = text.text;
+        this.updateLoadButton();
+    }
+
+    filterLibrary() {
+        const query = this.librarySearch.value.toLowerCase();
+        const activeCategory = document.querySelector('.category-btn.active').dataset.category;
+
+        document.querySelectorAll('.text-item').forEach(item => {
+            const text = this.textLibrary.find(t => t.id === item.dataset.id);
+            const matchesSearch = text.title.toLowerCase().includes(query) ||
+                                text.author.toLowerCase().includes(query) ||
+                                text.text.toLowerCase().includes(query);
+            const matchesCategory = activeCategory === 'all' || text.category === activeCategory;
+
+            item.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+        });
+    }
+
+    filterByCategory(category) {
+        // Update active category button
+        document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`[data-category="${category}"]`).classList.add('active');
+
+        this.filterLibrary();
+    }
+
+    // Saved Texts Management
+    loadSavedTexts() {
+        const saved = localStorage.getItem('saved-texts');
+        return saved ? JSON.parse(saved) : [];
+    }
+
+    saveSavedTexts() {
+        localStorage.setItem('saved-texts', JSON.stringify(this.savedTexts));
+    }
+
+    populateSavedTexts() {
+        this.savedList.innerHTML = '';
+
+        if (this.savedTexts.length === 0) {
+            this.savedList.innerHTML = '<div class="empty-state"><p>No saved texts yet. Save custom texts to see them here.</p></div>';
+            return;
+        }
+
+        this.savedTexts.forEach((text, index) => {
+            const item = this.createSavedItem(text, index);
+            this.savedList.appendChild(item);
+        });
+    }
+
+    createSavedItem(text, index) {
+        const item = document.createElement('div');
+        item.className = 'saved-item';
+        item.dataset.index = index;
+
+        const preview = text.text.substring(0, 120) + (text.text.length > 120 ? '...' : '');
+        const wordsCount = text.text.split(' ').length;
+
+        item.innerHTML = `
+            <div class="saved-item-header">
+                <div class="saved-item-title">${text.title || 'Untitled'}</div>
+                <button class="saved-item-delete" title="Delete">×</button>
+            </div>
+            <div class="saved-item-preview">${preview}</div>
+            <div class="text-item-meta">
+                <span>${wordsCount} words</span>
+                <span>Saved ${new Date(text.savedAt).toLocaleDateString()}</span>
+            </div>
+        `;
+
+        item.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('saved-item-delete')) {
+                this.selectSavedText(text, index);
+            }
+        });
+
+        item.querySelector('.saved-item-delete').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.deleteSavedText(index);
+        });
+
+        return item;
+    }
+
+    selectSavedText(text, index) {
+        // Clear previous selection
+        document.querySelectorAll('.text-item').forEach(item => item.classList.remove('selected'));
+        document.querySelectorAll('.saved-item').forEach(item => item.classList.remove('selected'));
+
+        // Select this item
+        document.querySelector(`[data-index="${index}"]`).classList.add('selected');
+        this.selectedText = text.text;
+        this.updateLoadButton();
+    }
+
+    deleteSavedText(index) {
+        if (confirm('Delete this saved text?')) {
+            this.savedTexts.splice(index, 1);
+            this.saveSavedTexts();
+            this.populateSavedTexts();
+            this.selectedText = null;
+            this.updateLoadButton();
+        }
+    }
+
+    // Modal Management
+    showTextInput() {
+        this.textInputOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        if (this.currentTab === 'library') {
+            this.librarySearch.focus();
+        } else if (this.currentTab === 'custom') {
+            this.textInput.focus();
+        }
+    }
+
+    hideTextInput() {
+        this.textInputOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+        this.selectedText = null;
+        this.updateLoadButton();
+        this.focusTypingInput();
+    }
+
+    updateLoadButton() {
+        const hasSelection = this.selectedText ||
+                           (this.currentTab === 'custom' && this.textInput.value.trim());
+
+        this.loadBtn.disabled = !hasSelection;
+    }
+
+    loadSelectedText() {
+        let textToLoad = '';
+        let titleToSave = '';
+
+        if (this.currentTab === 'library' || this.currentTab === 'saved') {
+            textToLoad = this.selectedText;
+        } else if (this.currentTab === 'custom') {
+            textToLoad = this.textInput.value.trim();
+            titleToSave = this.textTitle.value.trim();
+
+            // Save custom text if requested
+            if (this.saveText.checked && textToLoad) {
+                const savedText = {
+                    title: titleToSave || 'Untitled',
+                    text: textToLoad,
+                    savedAt: Date.now()
+                };
+
+                this.savedTexts.push(savedText);
+                this.saveSavedTexts();
+                this.populateSavedTexts();
+
+                // Clear the form
+                this.textInput.value = '';
+                this.textTitle.value = '';
+                this.saveText.checked = false;
+            }
+        }
+
+        if (!textToLoad) {
+            alert('Please select or enter some text to practice with.');
+            return;
+        }
+
+        this.originalText = textToLoad;
+        this.setupText();
+        this.resetTyping();
+        this.hideTextInput();
+        this.resetBtn.disabled = false;
+
+        console.log(`New text loaded: ${textToLoad.length} characters`);
+    }
+
+    setupText() {
+        this.textDisplay.innerHTML = '';
+        this.textDisplay.classList.remove('empty');
+
+        // Split text into words to handle wrapping better
+        const words = this.originalText.split(' ');
+        let charIndex = 0;
+
+        words.forEach((word, wordIndex) => {
+            // Create spans for each character in the word
+            for (let i = 0; i < word.length; i++) {
+                const char = word[i];
+                const span = document.createElement('span');
+                span.className = 'char untyped';
+                span.dataset.index = charIndex;
+
+                if (char === '\n') {
+                    span.innerHTML = '<br>';
+                    span.classList.add('linebreak');
+                } else if (char === '\t') {
+                    span.innerHTML = '&nbsp;&nbsp;&nbsp;&nbsp;';
+                    span.classList.add('tab');
+                } else {
+                    span.textContent = char;
+                }
+
+                this.textDisplay.appendChild(span);
+                charIndex++;
+            }
+
+            // Add space after word (except for last word)
+            if (wordIndex < words.length - 1) {
+                const spaceSpan = document.createElement('span');
+                spaceSpan.className = 'char untyped space';
+                spaceSpan.dataset.index = charIndex;
+                spaceSpan.innerHTML = '&nbsp;';
+                this.textDisplay.appendChild(spaceSpan);
+                charIndex++;
+            }
+        });
+
+        this.typingInput.disabled = false;
+        this.updateCurrentCharacter();
+        this.focusTypingInput();
+    }
+
+    resetTyping() {
+        if (!this.originalText) return;
+
+        this.currentPosition = 0;
+        this.startTime = null;
+        this.totalCharacters = 0;
+        this.correctCharacters = 0;
+        this.incorrectCharacters = 0;
+        this.isTypingStarted = false;
+        this.lastUpdateTime = 0;
+
+        this.typingInput.value = '';
+        this.typingInput.disabled = false;
+
+        const chars = this.textDisplay.querySelectorAll('.char');
+        chars.forEach(char => {
+            char.className = 'char untyped';
+            if (char.classList.contains('space')) char.classList.add('space');
+            if (char.classList.contains('linebreak')) char.classList.add('linebreak');
+            if (char.classList.contains('tab')) char.classList.add('tab');
+        });
+
+        this.updateCurrentCharacter();
+        this.resetStatsDisplay();
+        this.focusTypingInput();
+    }
+
+    resetStatsDisplay() {
+        this.wpmElement.textContent = '0';
+        this.accuracyElement.textContent = '100%';
+        this.progressElement.textContent = '0%';
+        this.progressFill.style.width = '0%';
+
+        this.accuracyElement.classList.remove('high-accuracy', 'medium-accuracy', 'low-accuracy');
+    }
+
+    handleInput(e) {
+        if (!this.originalText) return;
+
+        const inputValue = this.typingInput.value;
+        const inputLength = inputValue.length;
+
+        if (!this.isTypingStarted && inputLength > 0) {
+            this.startTime = Date.now();
+            this.isTypingStarted = true;
+        }
+
+        this.validateInput(inputValue);
+
+        const now = Date.now();
+        if (now - this.lastUpdateTime > 100) {
+            this.updateStats();
+            this.lastUpdateTime = now;
+        }
+
+        if (this.currentPosition >= this.originalText.length) {
+            this.completeTyping();
+        }
+    }
+
+    handleKeydown(e) {
+        if (e.key === 'Backspace') {
+            this.handleBackspace();
+        }
+    }
+
+    validateInput(inputValue) {
+        this.currentPosition = Math.min(inputValue.length, this.originalText.length);
+
+        // Update all characters based on input
+        for (let i = 0; i < this.originalText.length; i++) {
+            const charElement = this.textDisplay.querySelector(`[data-index="${i}"]`);
+            if (!charElement) continue;
+
+            // Reset classes
+            charElement.className = 'char';
+            if (charElement.classList.contains('space')) charElement.classList.add('space');
+            if (charElement.classList.contains('linebreak')) charElement.classList.add('linebreak');
+            if (charElement.classList.contains('tab')) charElement.classList.add('tab');
+
+            if (i < inputValue.length) {
+                const typedChar = inputValue[i];
+                const originalChar = this.originalText[i];
+
+                if (typedChar === originalChar) {
+                    charElement.classList.add('correct');
+                } else {
+                    charElement.classList.add('incorrect');
+                }
+            } else {
+                charElement.classList.add('untyped');
+            }
+        }
+
+        this.updateCurrentCharacter();
+        this.updateProgress();
+    }
+
+    handleBackspace() {
+        setTimeout(() => {
+            this.validateInput(this.typingInput.value);
+        }, 0);
+    }
+
+    updateCurrentCharacter() {
+        const chars = this.textDisplay.querySelectorAll('.char');
+
+        chars.forEach(char => char.classList.remove('current'));
+
+        // Find the character at current position using data-index
+        const currentChar = this.textDisplay.querySelector(`[data-index="${this.currentPosition}"]`);
+        if (currentChar) {
+            currentChar.classList.add('current');
+        }
+    }
+
+    updateStats() {
+        if (!this.isTypingStarted) {
+            this.wpmElement.textContent = '0';
+            this.accuracyElement.textContent = '100%';
+            this.updateProgress();
+            return;
+        }
+
+        let correct = 0;
+        let incorrect = 0;
+
+        for (let i = 0; i < this.currentPosition; i++) {
+            const charElement = this.textDisplay.querySelector(`[data-index="${i}"]`);
+            if (charElement && charElement.classList.contains('correct')) {
+                correct++;
+            } else if (charElement && charElement.classList.contains('incorrect')) {
+                incorrect++;
+            }
+        }
+
+        this.correctCharacters = correct;
+        this.incorrectCharacters = incorrect;
+        this.totalCharacters = correct + incorrect;
+
+        const timeElapsed = (Date.now() - this.startTime) / 1000 / 60;
+        const wordsTyped = this.correctCharacters / 5;
+        const wpm = timeElapsed > 0 ? Math.round(wordsTyped / timeElapsed) : 0;
+
+        const accuracy = this.totalCharacters > 0
+            ? Math.round((this.correctCharacters / this.totalCharacters) * 100)
+            : 100;
+
+        this.animateStatUpdate(this.wpmElement, wpm.toString());
+        this.animateStatUpdate(this.accuracyElement, `${accuracy}%`);
+
+        this.updateProgress();
+        this.updateAccuracyColors(accuracy);
+    }
+
+    animateStatUpdate(element, newValue) {
+        if (element.textContent !== newValue) {
+            element.style.transform = 'scale(1.1)';
+            element.textContent = newValue;
+
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 150);
+        }
+    }
+
+    updateAccuracyColors(accuracy) {
+        this.accuracyElement.classList.remove('high-accuracy', 'medium-accuracy', 'low-accuracy');
+
+        if (accuracy >= 95) {
+            this.accuracyElement.classList.add('high-accuracy');
+        } else if (accuracy >= 85) {
+            this.accuracyElement.classList.add('medium-accuracy');
+        } else {
+            this.accuracyElement.classList.add('low-accuracy');
+        }
+    }
+
+    updateProgress() {
+        const progress = this.originalText.length > 0
+            ? Math.round((this.currentPosition / this.originalText.length) * 100)
+            : 0;
+
+        this.progressElement.textContent = `${progress}%`;
+        this.progressFill.style.width = `${progress}%`;
+    }
+
+    completeTyping() {
+        this.isTypingStarted = false;
+        this.updateStats();
+
+        const totalTime = this.startTime ? Math.round((Date.now() - this.startTime) / 1000) : 0;
+        const minutes = Math.floor(totalTime / 60);
+        const seconds = totalTime % 60;
+        const timeFormatted = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+
+        this.typingInput.disabled = true;
+
+        setTimeout(() => {
+            const stats = this.getComprehensiveStats();
+            const message = `🎉 Typing Practice Complete!\n\n` +
+                          `⚡ Final WPM: ${stats.wpm}\n` +
+                          `🎯 Accuracy: ${stats.accuracy}%\n` +
+                          `⏱️ Time: ${timeFormatted}\n` +
+                          `✅ Correct Characters: ${stats.correctCharacters}\n` +
+                          `❌ Incorrect Characters: ${stats.incorrectCharacters}\n` +
+                          `📝 Total Characters: ${stats.totalLength}\n` +
+                          `📊 Progress: 100%`;
+
+            alert(message);
+        }, 300);
+    }
+
+    getComprehensiveStats() {
+        const timeElapsed = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
+
+        return {
+            wpm: parseInt(this.wpmElement.textContent) || 0,
+            accuracy: parseInt(this.accuracyElement.textContent.replace('%', '')) || 100,
+            timeElapsed: Math.round(timeElapsed),
+            correctCharacters: this.correctCharacters,
+            incorrectCharacters: this.incorrectCharacters,
+            totalTyped: this.totalCharacters,
+            totalLength: this.originalText.length,
+            progress: 100
+        };
+    }
+
+    focusTypingInput() {
+        if (this.originalText && !this.typingInput.disabled) {
+            this.typingInput.focus();
+        }
+    }
+
+    toggleDarkMode() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+
+    loadTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+        document.documentElement.setAttribute('data-theme', theme);
+    }
+}
+
+// Initialize the typing engine when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new TypingEngine();
+});
