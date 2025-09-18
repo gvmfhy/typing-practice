@@ -447,6 +447,7 @@ class TypingEngine {
 
     setupPDFControls() {
         const overlay = document.getElementById('pdfViewerOverlay');
+        const pdfViewerBody = overlay.querySelector('.pdf-viewer-body');
 
         // Close button
         document.getElementById('pdfCloser').onclick = () => {
@@ -468,6 +469,27 @@ class TypingEngine {
                 this.renderPDFPage(this.currentPage);
             }
         };
+
+        // Scroll wheel navigation for continuous browsing
+        pdfViewerBody.addEventListener('wheel', (e) => {
+            const scrollThreshold = 50; // pixels to trigger page change
+            const atBottom = pdfViewerBody.scrollTop + pdfViewerBody.clientHeight >= pdfViewerBody.scrollHeight - 5;
+            const atTop = pdfViewerBody.scrollTop <= 5;
+
+            if (e.deltaY > scrollThreshold && atBottom && this.currentPage < this.totalPages) {
+                // Scrolling down at bottom of page - go to next page
+                this.currentPage++;
+                this.renderPDFPage(this.currentPage);
+                pdfViewerBody.scrollTop = 0;
+                e.preventDefault();
+            } else if (e.deltaY < -scrollThreshold && atTop && this.currentPage > 1) {
+                // Scrolling up at top of page - go to previous page
+                this.currentPage--;
+                this.renderPDFPage(this.currentPage);
+                pdfViewerBody.scrollTop = pdfViewerBody.scrollHeight;
+                e.preventDefault();
+            }
+        });
 
         // Zoom controls
         document.getElementById('pdfZoomIn').onclick = () => {
@@ -503,9 +525,10 @@ class TypingEngine {
             }
         };
 
-        // Monitor text selection
-        document.addEventListener('selectionchange', () => {
-            const selection = window.getSelection().toString();
+        // Monitor text selection - use mouseup for better PDF text layer selection
+        const pdfTextLayer = document.getElementById('pdfTextLayer');
+        const checkSelection = () => {
+            const selection = window.getSelection().toString().trim();
             const useSelectedBtn = document.getElementById('pdfUseSelected');
 
             if (selection && selection.length > 10) {
@@ -517,7 +540,12 @@ class TypingEngine {
                 document.getElementById('pdfSelectionInfo').textContent =
                     'Select text in the PDF, then click "Use Selected Text"';
             }
-        });
+        };
+
+        // Check selection on mouseup and touch events
+        pdfTextLayer.addEventListener('mouseup', checkSelection);
+        pdfTextLayer.addEventListener('touchend', checkSelection);
+        document.addEventListener('selectionchange', checkSelection);
     }
 
     async renderPDFPage(pageNum) {
@@ -544,12 +572,18 @@ class TypingEngine {
         textLayer.style.height = viewport.height + 'px';
 
         // Create selectable text layer
+        const textDivs = [];
         pdfjsLib.renderTextLayer({
             textContent: textContent,
             container: textLayer,
             viewport: viewport,
-            textDivs: []
+            textDivs: textDivs
         });
+
+        // Make text selectable by ensuring proper CSS
+        textLayer.style.pointerEvents = 'auto';
+        textLayer.style.userSelect = 'text';
+        textLayer.style.cursor = 'text';
 
         // Update UI
         document.getElementById('pdfPageNum').textContent = pageNum;

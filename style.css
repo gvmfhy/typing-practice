@@ -901,13 +901,16 @@ body {
 
 .pdf-viewer-body {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
   background: var(--bg-tertiary);
   display: flex;
   justify-content: center;
   align-items: flex-start;
   padding: 20px;
   position: relative;
+  scroll-behavior: smooth;
+  max-height: 70vh;
 }
 
 #pdfCanvas {
@@ -922,11 +925,15 @@ body {
   left: 50%;
   top: 20px;
   transform: translateX(-50%);
-  overflow: hidden;
-  opacity: 0;
+  overflow: visible;
+  opacity: 0.001;
   line-height: 1;
   pointer-events: auto;
   user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  cursor: text;
 }
 
 .pdf-text-layer > span {
@@ -935,10 +942,24 @@ body {
   white-space: pre;
   cursor: text;
   transform-origin: 0% 0%;
+  user-select: text;
+  -webkit-user-select: text;
+  pointer-events: auto;
 }
 
 .pdf-text-layer ::selection {
-  background: rgba(0, 122, 255, 0.3);
+  background: rgba(0, 122, 255, 0.4);
+  color: transparent;
+}
+
+.pdf-text-layer ::-moz-selection {
+  background: rgba(0, 122, 255, 0.4);
+  color: transparent;
+}
+
+/* Ensure text is selectable even with transparent color */
+.pdf-text-layer span.selected {
+  background-color: rgba(0, 122, 255, 0.3);
 }
 
 .pdf-viewer-footer {
