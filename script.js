@@ -340,12 +340,6 @@ class TypingEngine {
         try {
             let extractedText = '';
 
-            // Check if scribe is loaded
-            if (typeof window.scribe === 'undefined') {
-                // Fallback: Basic extraction for demo (you'd use Tesseract as backup)
-                throw new Error('OCR library not loaded. Please refresh and try again.');
-            }
-
             // Process based on file type
             if (file.type === 'application/pdf') {
                 // For PDF files
@@ -386,26 +380,56 @@ class TypingEngine {
         // Create image URL
         const imageUrl = URL.createObjectURL(file);
 
-        // Use Scribe.js if available
-        if (window.scribe && window.scribe.extractText) {
-            const result = await window.scribe.extractText(imageUrl);
-            URL.revokeObjectURL(imageUrl);
-            return result;
-        }
+        try {
+            // Try Scribe.js first if available (better accuracy)
+            if (window.scribe && window.scribe.extractText) {
+                console.log('Using Scribe.js for OCR');
+                const result = await window.scribe.extractText(imageUrl);
+                URL.revokeObjectURL(imageUrl);
+                return result;
+            }
 
-        // Fallback message
-        URL.revokeObjectURL(imageUrl);
-        return 'OCR processing... (Note: Scribe.js needs to be properly initialized. For now, paste your text manually.)';
+            // Fallback to Tesseract.js (always available)
+            if (window.Tesseract) {
+                console.log('Using Tesseract.js for OCR');
+                const result = await Tesseract.recognize(
+                    imageUrl,
+                    'eng',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                const progress = Math.round(m.progress * 100);
+                                document.getElementById('ocrStatus').innerHTML =
+                                    `<div class="ocr-loading">Extracting text... ${progress}%</div>`;
+                            }
+                        }
+                    }
+                );
+                URL.revokeObjectURL(imageUrl);
+                return result.data.text;
+            }
+
+            throw new Error('No OCR library available');
+
+        } catch (error) {
+            URL.revokeObjectURL(imageUrl);
+            throw error;
+        }
     }
 
     async extractFromPDF(file) {
-        // For PDF extraction, we'd use scribe's PDF capabilities
+        // For PDF, we need to convert to image first
+        // This is a limitation without Scribe.js
+
+        // Try Scribe.js first (has native PDF support)
         if (window.scribe && window.scribe.extractFromPDF) {
+            console.log('Using Scribe.js for PDF extraction');
             return await window.scribe.extractFromPDF(file);
         }
 
-        // Fallback message
-        return 'PDF processing... (Note: For full PDF support, ensure Scribe.js is loaded. For now, paste your text manually.)';
+        // For Tesseract fallback, we need to inform user about limitation
+        // PDF.js could be added for PDF rendering, but keeping it simple for now
+        throw new Error('PDF files require manual text selection. Please copy the text from your PDF reader and paste it directly, or use a screenshot of the specific page.');
     }
 
     // Tab Management

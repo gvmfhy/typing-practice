@@ -164,11 +164,21 @@
         </footer>
     </div>
 
-    <!-- Load Scribe.js for OCR -->
+    <!-- Load OCR Libraries -->
+    <!-- Tesseract.js as primary (more reliable CDN) -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+
+    <!-- Try to load Scribe.js as enhancement -->
     <script type="module">
-        import scribe from 'https://unpkg.com/@scribe.js/scribe.js@0.1.0/dist/scribe.esm.min.js';
-        window.scribe = scribe;
+        try {
+            const { default: scribe } = await import('https://cdn.jsdelivr.net/npm/@scribe.js/scribe.js@0.1.0/+esm');
+            window.scribe = scribe;
+            console.log('Scribe.js loaded successfully');
+        } catch (error) {
+            console.log('Scribe.js not available, using Tesseract.js');
+        }
     </script>
+
     <script src="script.js"></script>
 </body>
 </html>
