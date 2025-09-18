@@ -333,40 +333,37 @@ class TypingEngine {
     async processFile(file) {
         const ocrStatus = document.getElementById('ocrStatus');
 
-        // Show loading
-        ocrStatus.style.display = 'block';
-        ocrStatus.innerHTML = '<div class="ocr-loading">Extracting text...</div>';
-
         try {
-            let extractedText = '';
-
             // Process based on file type
             if (file.type === 'application/pdf') {
-                // For PDF files
-                extractedText = await this.extractFromPDF(file);
+                // Open PDF in viewer for visual selection
+                await this.openPDFViewer(file);
             } else if (file.type.startsWith('image/')) {
-                // For image files
-                extractedText = await this.extractFromImage(file);
+                // For images, use OCR directly
+                ocrStatus.style.display = 'block';
+                ocrStatus.innerHTML = '<div class="ocr-loading">Extracting text...</div>';
+
+                const extractedText = await this.extractFromImage(file);
+
+                // Success - populate text area
+                this.textInput.value = extractedText;
+                ocrStatus.innerHTML = '<div style="color: var(--accent-green);">✓ Text extracted successfully! Review and edit below.</div>';
+
+                // Show selection helper for long texts
+                if (extractedText.length > 500) {
+                    document.getElementById('selectionHelper').style.display = 'block';
+                }
+
+                // Update load button
+                this.updateLoadButton();
+
+                // Hide status after delay
+                setTimeout(() => {
+                    ocrStatus.style.display = 'none';
+                }, 3000);
             } else {
                 throw new Error('Unsupported file type. Please use PDF or image files.');
             }
-
-            // Success - populate text area
-            this.textInput.value = extractedText;
-            ocrStatus.innerHTML = '<div style="color: var(--accent-green);">✓ Text extracted successfully! Review and edit below.</div>';
-
-            // Show selection helper for long texts
-            if (extractedText.length > 500) {
-                document.getElementById('selectionHelper').style.display = 'block';
-            }
-
-            // Update load button
-            this.updateLoadButton();
-
-            // Hide status after delay
-            setTimeout(() => {
-                ocrStatus.style.display = 'none';
-            }, 3000);
 
         } catch (error) {
             ocrStatus.innerHTML = `<div style="color: var(--accent-red);">Error: ${error.message}</div>`;
@@ -417,19 +414,157 @@ class TypingEngine {
         }
     }
 
-    async extractFromPDF(file) {
-        // For PDF, we need to convert to image first
-        // This is a limitation without Scribe.js
+    // PDF Viewer functionality
+    async openPDFViewer(file) {
+        const overlay = document.getElementById('pdfViewerOverlay');
+        overlay.classList.add('active');
 
-        // Try Scribe.js first (has native PDF support)
-        if (window.scribe && window.scribe.extractFromPDF) {
-            console.log('Using Scribe.js for PDF extraction');
-            return await window.scribe.extractFromPDF(file);
+        // Initialize PDF.js
+        const fileUrl = URL.createObjectURL(file);
+        const loadingTask = pdfjsLib.getDocument(fileUrl);
+
+        try {
+            this.pdfDocument = await loadingTask.promise;
+            this.totalPages = this.pdfDocument.numPages;
+            this.currentPage = 1;
+            this.currentScale = 1.0;
+
+            // Setup viewer controls
+            this.setupPDFControls();
+
+            // Render first page
+            await this.renderPDFPage(this.currentPage);
+
+            // Update page count
+            document.getElementById('pdfPageCount').textContent = this.totalPages;
+
+        } catch (error) {
+            console.error('Error loading PDF:', error);
+            overlay.classList.remove('active');
+            throw new Error('Failed to load PDF. Please try again or use a screenshot.');
         }
+    }
 
-        // For Tesseract fallback, we need to inform user about limitation
-        // PDF.js could be added for PDF rendering, but keeping it simple for now
-        throw new Error('PDF files require manual text selection. Please copy the text from your PDF reader and paste it directly, or use a screenshot of the specific page.');
+    setupPDFControls() {
+        const overlay = document.getElementById('pdfViewerOverlay');
+
+        // Close button
+        document.getElementById('pdfCloser').onclick = () => {
+            overlay.classList.remove('active');
+            URL.revokeObjectURL(this.pdfDocument.url);
+        };
+
+        // Navigation
+        document.getElementById('pdfPrevPage').onclick = () => {
+            if (this.currentPage > 1) {
+                this.currentPage--;
+                this.renderPDFPage(this.currentPage);
+            }
+        };
+
+        document.getElementById('pdfNextPage').onclick = () => {
+            if (this.currentPage < this.totalPages) {
+                this.currentPage++;
+                this.renderPDFPage(this.currentPage);
+            }
+        };
+
+        // Zoom controls
+        document.getElementById('pdfZoomIn').onclick = () => {
+            this.currentScale = Math.min(this.currentScale * 1.2, 3.0);
+            this.renderPDFPage(this.currentPage);
+        };
+
+        document.getElementById('pdfZoomOut').onclick = () => {
+            this.currentScale = Math.max(this.currentScale / 1.2, 0.5);
+            this.renderPDFPage(this.currentPage);
+        };
+
+        // Extract all text button
+        document.getElementById('pdfExtractAll').onclick = async () => {
+            const text = await this.extractAllPDFText();
+            this.textInput.value = text;
+            overlay.classList.remove('active');
+            this.updateLoadButton();
+
+            // Show selection helper for long texts
+            if (text.length > 500) {
+                document.getElementById('selectionHelper').style.display = 'block';
+            }
+        };
+
+        // Use selected text button
+        document.getElementById('pdfUseSelected').onclick = () => {
+            const selectedText = window.getSelection().toString();
+            if (selectedText) {
+                this.textInput.value = selectedText;
+                overlay.classList.remove('active');
+                this.updateLoadButton();
+            }
+        };
+
+        // Monitor text selection
+        document.addEventListener('selectionchange', () => {
+            const selection = window.getSelection().toString();
+            const useSelectedBtn = document.getElementById('pdfUseSelected');
+
+            if (selection && selection.length > 10) {
+                useSelectedBtn.disabled = false;
+                document.getElementById('pdfSelectionInfo').textContent =
+                    `Selected ${selection.length} characters`;
+            } else {
+                useSelectedBtn.disabled = true;
+                document.getElementById('pdfSelectionInfo').textContent =
+                    'Select text in the PDF, then click "Use Selected Text"';
+            }
+        });
+    }
+
+    async renderPDFPage(pageNum) {
+        const page = await this.pdfDocument.getPage(pageNum);
+        const canvas = document.getElementById('pdfCanvas');
+        const context = canvas.getContext('2d');
+
+        // Calculate viewport
+        const viewport = page.getViewport({ scale: this.currentScale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+
+        // Render PDF page
+        await page.render({
+            canvasContext: context,
+            viewport: viewport
+        }).promise;
+
+        // Extract and overlay text for selection
+        const textContent = await page.getTextContent();
+        const textLayer = document.getElementById('pdfTextLayer');
+        textLayer.innerHTML = '';
+        textLayer.style.width = viewport.width + 'px';
+        textLayer.style.height = viewport.height + 'px';
+
+        // Create selectable text layer
+        pdfjsLib.renderTextLayer({
+            textContent: textContent,
+            container: textLayer,
+            viewport: viewport,
+            textDivs: []
+        });
+
+        // Update UI
+        document.getElementById('pdfPageNum').textContent = pageNum;
+        document.getElementById('pdfZoomLevel').textContent = Math.round(this.currentScale * 100) + '%';
+    }
+
+    async extractAllPDFText() {
+        let fullText = '';
+        for (let i = 1; i <= this.totalPages; i++) {
+            const page = await this.pdfDocument.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(item => item.str).join(' ');
+            fullText += pageText + '\n\n';
+        }
+        return fullText.trim();
     }
 
     // Tab Management

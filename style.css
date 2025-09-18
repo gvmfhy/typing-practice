@@ -842,6 +842,123 @@ body {
   }
 }
 
+/* PDF Viewer Modal */
+.pdf-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.pdf-viewer-overlay.active {
+  display: flex;
+}
+
+.pdf-viewer-container {
+  width: 90%;
+  max-width: 1000px;
+  height: 90vh;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+}
+
+.pdf-viewer-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pdf-viewer-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.pdf-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-info, .zoom-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  min-width: 60px;
+  text-align: center;
+}
+
+.pdf-viewer-body {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-tertiary);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+  position: relative;
+}
+
+#pdfCanvas {
+  box-shadow: var(--shadow-md);
+  background: white;
+  max-width: 100%;
+  display: block;
+}
+
+.pdf-text-layer {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  opacity: 0;
+  line-height: 1;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.pdf-text-layer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.pdf-text-layer ::selection {
+  background: rgba(0, 122, 255, 0.3);
+}
+
+.pdf-viewer-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selection-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.pdf-actions {
+  display: flex;
+  gap: 12px;
+}
+
 /* Focus styles for accessibility */
 button:focus-visible,
 textarea:focus-visible {

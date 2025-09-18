@@ -7,6 +7,41 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- PDF Viewer Modal -->
+    <div class="pdf-viewer-overlay" id="pdfViewerOverlay">
+        <div class="pdf-viewer-container">
+            <div class="pdf-viewer-header">
+                <h3>Select Text from PDF</h3>
+                <div class="pdf-controls">
+                    <button class="btn-icon" id="pdfPrevPage" title="Previous page">←</button>
+                    <span class="page-info">
+                        <span id="pdfPageNum">1</span> / <span id="pdfPageCount">1</span>
+                    </span>
+                    <button class="btn-icon" id="pdfNextPage" title="Next page">→</button>
+                    <button class="btn-icon" id="pdfZoomOut" title="Zoom out">−</button>
+                    <span class="zoom-info" id="pdfZoomLevel">100%</span>
+                    <button class="btn-icon" id="pdfZoomIn" title="Zoom in">+</button>
+                    <button class="btn-icon" id="pdfCloser" title="Close">×</button>
+                </div>
+            </div>
+
+            <div class="pdf-viewer-body">
+                <canvas id="pdfCanvas"></canvas>
+                <div id="pdfTextLayer" class="pdf-text-layer"></div>
+            </div>
+
+            <div class="pdf-viewer-footer">
+                <div class="selection-info" id="pdfSelectionInfo">
+                    Select text in the PDF, then click "Use Selected Text"
+                </div>
+                <div class="pdf-actions">
+                    <button class="btn-secondary" id="pdfExtractAll">Extract All Text</button>
+                    <button class="btn-primary" id="pdfUseSelected" disabled>Use Selected Text</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="app">
         <header class="header">
             <div class="header-content">
@@ -164,8 +199,12 @@
         </footer>
     </div>
 
-    <!-- Load OCR Libraries -->
-    <!-- Tesseract.js as primary (more reliable CDN) -->
+    <!-- Load OCR and PDF Libraries -->
+    <!-- PDF.js for PDF viewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <!-- Tesseract.js for OCR -->
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 
     <!-- Try to load Scribe.js as enhancement -->
