@@ -433,6 +433,92 @@ body {
   gap: 16px;
 }
 
+/* OCR Import Section */
+.ocr-import-section {
+  margin-bottom: 16px;
+}
+
+.import-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.drop-zone {
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: var(--bg-primary);
+}
+
+.drop-zone:hover {
+  border-color: var(--accent-blue);
+  background: rgba(0, 122, 255, 0.05);
+}
+
+.drop-zone.drag-over {
+  border-color: var(--accent-blue);
+  background: rgba(0, 122, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.drop-zone-content p {
+  margin: 4px 0;
+}
+
+.drop-zone-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.paste-zone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border: 2px dashed var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-primary);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.ocr-status {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ocr-loading {
+  color: var(--accent-blue);
+  font-weight: 500;
+}
+
+/* Text Editor Section */
+.text-editor-section {
+  position: relative;
+}
+
+.selection-helper {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0, 122, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.helper-text {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
 #textInput {
   width: 100%;
   padding: 16px;

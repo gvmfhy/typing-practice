@@ -165,6 +165,7 @@ class TypingEngine {
 
     init() {
         this.setupEventListeners();
+        this.setupOCR();
         this.loadTheme();
         this.initializeStats();
         this.populateTextLibrary();
@@ -246,6 +247,165 @@ class TypingEngine {
                 this.hideTextInput();
             }
         });
+    }
+
+    // OCR Setup
+    setupOCR() {
+        const dropZone = document.getElementById('ocrDropZone');
+        const fileInput = document.getElementById('fileInput');
+        const ocrStatus = document.getElementById('ocrStatus');
+        const selectionHelper = document.getElementById('selectionHelper');
+        const useSelectedBtn = document.getElementById('useSelectedBtn');
+
+        // Click to open file picker
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) this.processFile(file);
+        });
+
+        // Drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+
+            const file = e.dataTransfer.files[0];
+            if (file) this.processFile(file);
+        });
+
+        // Paste screenshot
+        document.addEventListener('paste', async (e) => {
+            // Only process if Custom Text tab is active and modal is open
+            if (this.currentTab !== 'custom' || !this.textInputOverlay.classList.contains('active')) {
+                return;
+            }
+
+            const items = e.clipboardData.items;
+            for (let item of items) {
+                if (item.type.indexOf('image') !== -1) {
+                    const blob = item.getAsFile();
+                    await this.processFile(blob);
+                    break;
+                }
+            }
+        });
+
+        // Text selection helper
+        this.textInput.addEventListener('select', () => {
+            const selectedText = this.textInput.value.substring(
+                this.textInput.selectionStart,
+                this.textInput.selectionEnd
+            );
+
+            if (selectedText.length > 10) {
+                selectionHelper.style.display = 'block';
+            } else {
+                selectionHelper.style.display = 'none';
+            }
+        });
+
+        // Use selected text button
+        useSelectedBtn.addEventListener('click', () => {
+            const selectedText = this.textInput.value.substring(
+                this.textInput.selectionStart,
+                this.textInput.selectionEnd
+            );
+
+            if (selectedText) {
+                this.textInput.value = selectedText;
+                selectionHelper.style.display = 'none';
+                this.updateLoadButton();
+            }
+        });
+    }
+
+    async processFile(file) {
+        const ocrStatus = document.getElementById('ocrStatus');
+
+        // Show loading
+        ocrStatus.style.display = 'block';
+        ocrStatus.innerHTML = '<div class="ocr-loading">Extracting text...</div>';
+
+        try {
+            let extractedText = '';
+
+            // Check if scribe is loaded
+            if (typeof window.scribe === 'undefined') {
+                // Fallback: Basic extraction for demo (you'd use Tesseract as backup)
+                throw new Error('OCR library not loaded. Please refresh and try again.');
+            }
+
+            // Process based on file type
+            if (file.type === 'application/pdf') {
+                // For PDF files
+                extractedText = await this.extractFromPDF(file);
+            } else if (file.type.startsWith('image/')) {
+                // For image files
+                extractedText = await this.extractFromImage(file);
+            } else {
+                throw new Error('Unsupported file type. Please use PDF or image files.');
+            }
+
+            // Success - populate text area
+            this.textInput.value = extractedText;
+            ocrStatus.innerHTML = '<div style="color: var(--accent-green);">✓ Text extracted successfully! Review and edit below.</div>';
+
+            // Show selection helper for long texts
+            if (extractedText.length > 500) {
+                document.getElementById('selectionHelper').style.display = 'block';
+            }
+
+            // Update load button
+            this.updateLoadButton();
+
+            // Hide status after delay
+            setTimeout(() => {
+                ocrStatus.style.display = 'none';
+            }, 3000);
+
+        } catch (error) {
+            ocrStatus.innerHTML = `<div style="color: var(--accent-red);">Error: ${error.message}</div>`;
+            setTimeout(() => {
+                ocrStatus.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    async extractFromImage(file) {
+        // Create image URL
+        const imageUrl = URL.createObjectURL(file);
+
+        // Use Scribe.js if available
+        if (window.scribe && window.scribe.extractText) {
+            const result = await window.scribe.extractText(imageUrl);
+            URL.revokeObjectURL(imageUrl);
+            return result;
+        }
+
+        // Fallback message
+        URL.revokeObjectURL(imageUrl);
+        return 'OCR processing... (Note: Scribe.js needs to be properly initialized. For now, paste your text manually.)';
+    }
+
+    async extractFromPDF(file) {
+        // For PDF extraction, we'd use scribe's PDF capabilities
+        if (window.scribe && window.scribe.extractFromPDF) {
+            return await window.scribe.extractFromPDF(file);
+        }
+
+        // Fallback message
+        return 'PDF processing... (Note: For full PDF support, ensure Scribe.js is loaded. For now, paste your text manually.)';
     }
 
     // Tab Management

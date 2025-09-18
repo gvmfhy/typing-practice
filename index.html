@@ -71,11 +71,42 @@
                         <!-- Custom Text Tab -->
                         <div class="tab-panel" id="customPanel">
                             <div class="custom-text-input">
-                                <textarea
-                                    id="textInput"
-                                    placeholder="Paste the text you want to practice typing..."
-                                    rows="8"
-                                ></textarea>
+                                <!-- OCR Import Section -->
+                                <div class="ocr-import-section">
+                                    <div class="import-methods">
+                                        <div class="drop-zone" id="ocrDropZone">
+                                            <div class="drop-zone-content">
+                                                <p>📄 Drop PDF or image here</p>
+                                                <p class="drop-zone-hint">or click to browse</p>
+                                                <input type="file" id="fileInput" accept="image/*,.pdf" hidden>
+                                            </div>
+                                        </div>
+                                        <div class="paste-zone">
+                                            <p>📋 Or paste screenshot with ⌘V</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- OCR Progress -->
+                                    <div class="ocr-status" id="ocrStatus" style="display: none;">
+                                        <div class="ocr-loading">Extracting text...</div>
+                                    </div>
+                                </div>
+
+                                <!-- Text Editor/Selector -->
+                                <div class="text-editor-section">
+                                    <textarea
+                                        id="textInput"
+                                        placeholder="Paste text directly or use OCR import above..."
+                                        rows="8"
+                                    ></textarea>
+
+                                    <!-- Selection Helper -->
+                                    <div class="selection-helper" id="selectionHelper" style="display: none;">
+                                        <p class="helper-text">💡 Select the text you want to practice, then click "Use Selected Text"</p>
+                                        <button class="btn-secondary" id="useSelectedBtn">Use Selected Text</button>
+                                    </div>
+                                </div>
+
                                 <div class="save-options">
                                     <input type="text" id="textTitle" placeholder="Give this text a title (optional)" class="title-input">
                                     <label class="save-checkbox">
@@ -133,6 +164,11 @@
         </footer>
     </div>
 
+    <!-- Load Scribe.js for OCR -->
+    <script type="module">
+        import scribe from 'https://unpkg.com/@scribe.js/scribe.js@0.1.0/dist/scribe.esm.min.js';
+        window.scribe = scribe;
+    </script>
     <script src="script.js"></script>
 </body>
 </html>
