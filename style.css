@@ -926,7 +926,7 @@ body {
   top: 20px;
   transform: translateX(-50%);
   overflow: visible;
-  opacity: 0.001;
+  opacity: 1;
   line-height: 1;
   pointer-events: auto;
   user-select: text;
@@ -934,6 +934,7 @@ body {
   -moz-user-select: text;
   -ms-user-select: text;
   cursor: text;
+  mix-blend-mode: multiply;
 }
 
 .pdf-text-layer > span {
@@ -948,13 +949,18 @@ body {
 }
 
 .pdf-text-layer ::selection {
-  background: rgba(0, 122, 255, 0.4);
-  color: transparent;
+  background: rgba(0, 122, 255, 0.3);
+  color: rgba(0, 0, 0, 0.01);
 }
 
 .pdf-text-layer ::-moz-selection {
-  background: rgba(0, 122, 255, 0.4);
-  color: transparent;
+  background: rgba(0, 122, 255, 0.3);
+  color: rgba(0, 0, 0, 0.01);
+}
+
+.pdf-text-layer::-webkit-selection {
+  background: rgba(0, 122, 255, 0.3);
+  color: rgba(0, 0, 0, 0.01);
 }
 
 /* Ensure text is selectable even with transparent color */

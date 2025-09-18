@@ -527,25 +527,67 @@ class TypingEngine {
 
         // Monitor text selection - use mouseup for better PDF text layer selection
         const pdfTextLayer = document.getElementById('pdfTextLayer');
+        let isSelecting = false;
+
         const checkSelection = () => {
-            const selection = window.getSelection().toString().trim();
+            const selection = window.getSelection();
+            const selectedText = selection.toString().trim();
             const useSelectedBtn = document.getElementById('pdfUseSelected');
 
-            if (selection && selection.length > 10) {
+            if (selectedText && selectedText.length > 10) {
                 useSelectedBtn.disabled = false;
                 document.getElementById('pdfSelectionInfo').textContent =
-                    `Selected ${selection.length} characters`;
+                    `✓ Selected ${selectedText.length} characters`;
+                document.getElementById('pdfSelectionInfo').style.color = 'var(--accent-primary)';
+
+                // Add visual highlight to selected spans
+                const range = selection.getRangeAt(0);
+                const spans = pdfTextLayer.querySelectorAll('span');
+                spans.forEach(span => {
+                    if (selection.containsNode(span, true)) {
+                        span.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
+                    } else {
+                        span.style.backgroundColor = '';
+                    }
+                });
             } else {
                 useSelectedBtn.disabled = true;
                 document.getElementById('pdfSelectionInfo').textContent =
                     'Select text in the PDF, then click "Use Selected Text"';
+                document.getElementById('pdfSelectionInfo').style.color = '';
+
+                // Clear highlights
+                const spans = pdfTextLayer.querySelectorAll('span');
+                spans.forEach(span => span.style.backgroundColor = '');
             }
         };
 
-        // Check selection on mouseup and touch events
-        pdfTextLayer.addEventListener('mouseup', checkSelection);
+        // Track mouse selection
+        pdfTextLayer.addEventListener('mousedown', () => {
+            isSelecting = true;
+            // Clear any existing selection highlights
+            const spans = pdfTextLayer.querySelectorAll('span');
+            spans.forEach(span => span.style.backgroundColor = '');
+        });
+
+        pdfTextLayer.addEventListener('mousemove', () => {
+            if (isSelecting) {
+                checkSelection();
+            }
+        });
+
+        pdfTextLayer.addEventListener('mouseup', () => {
+            isSelecting = false;
+            checkSelection();
+        });
+
+        // Check selection on touch and keyboard events
         pdfTextLayer.addEventListener('touchend', checkSelection);
-        document.addEventListener('selectionchange', checkSelection);
+        document.addEventListener('selectionchange', () => {
+            if (overlay.classList.contains('active')) {
+                checkSelection();
+            }
+        });
     }
 
     async renderPDFPage(pageNum) {
