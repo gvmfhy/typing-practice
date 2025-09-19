@@ -428,12 +428,13 @@ class TypingEngine {
             this.totalPages = this.pdfDocument.numPages;
             this.currentPage = 1;
             this.currentScale = 1.0;
+            this.pdfFileUrl = fileUrl;
 
             // Setup viewer controls
             this.setupPDFControls();
 
-            // Render first page
-            await this.renderPDFPage(this.currentPage);
+            // Build and render continuous pages
+            await this.buildPDFPages();
 
             // Update page count
             document.getElementById('pdfPageCount').textContent = this.totalPages;
@@ -448,58 +449,64 @@ class TypingEngine {
     setupPDFControls() {
         const overlay = document.getElementById('pdfViewerOverlay');
         const pdfViewerBody = overlay.querySelector('.pdf-viewer-body');
+        const pagesContainer = document.getElementById('pdfPages');
+
+        // Cleanup helper
+        const cleanup = () => {
+            if (this._selectionHandler) {
+                document.removeEventListener('selectionchange', this._selectionHandler);
+                this._selectionHandler = null;
+            }
+            if (this.pdfFileUrl) {
+                URL.revokeObjectURL(this.pdfFileUrl);
+                this.pdfFileUrl = null;
+            }
+            pagesContainer.innerHTML = '';
+        };
 
         // Close button
         document.getElementById('pdfCloser').onclick = () => {
             overlay.classList.remove('active');
-            URL.revokeObjectURL(this.pdfDocument.url);
+            cleanup();
         };
 
-        // Navigation
+        // Navigation (scroll to previous/next page)
         document.getElementById('pdfPrevPage').onclick = () => {
-            if (this.currentPage > 1) {
-                this.currentPage--;
-                this.renderPDFPage(this.currentPage);
-            }
+            const prev = pagesContainer.querySelector(`[data-page="${Math.max(1, this.currentPage - 1)}"]`);
+            if (prev) prev.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
         document.getElementById('pdfNextPage').onclick = () => {
-            if (this.currentPage < this.totalPages) {
-                this.currentPage++;
-                this.renderPDFPage(this.currentPage);
-            }
+            const next = pagesContainer.querySelector(`[data-page="${Math.min(this.totalPages, this.currentPage + 1)}"]`);
+            if (next) next.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
-        // Scroll wheel navigation for continuous browsing
-        pdfViewerBody.addEventListener('wheel', (e) => {
-            const scrollThreshold = 50; // pixels to trigger page change
-            const atBottom = pdfViewerBody.scrollTop + pdfViewerBody.clientHeight >= pdfViewerBody.scrollHeight - 5;
-            const atTop = pdfViewerBody.scrollTop <= 5;
-
-            if (e.deltaY > scrollThreshold && atBottom && this.currentPage < this.totalPages) {
-                // Scrolling down at bottom of page - go to next page
-                this.currentPage++;
-                this.renderPDFPage(this.currentPage);
-                pdfViewerBody.scrollTop = 0;
-                e.preventDefault();
-            } else if (e.deltaY < -scrollThreshold && atTop && this.currentPage > 1) {
-                // Scrolling up at top of page - go to previous page
-                this.currentPage--;
-                this.renderPDFPage(this.currentPage);
-                pdfViewerBody.scrollTop = pdfViewerBody.scrollHeight;
-                e.preventDefault();
+        // Track which page is in view to update page number
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter(e => e.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+            if (visible) {
+                this.currentPage = parseInt(visible.target.dataset.page, 10);
+                document.getElementById('pdfPageNum').textContent = this.currentPage;
             }
-        });
+        }, { root: pdfViewerBody, threshold: 0.6 });
+
+        // Observe pages when built
+        this.observePages = () => {
+            observer.disconnect();
+            pagesContainer.querySelectorAll('.pdf-page').forEach(p => observer.observe(p));
+        };
 
         // Zoom controls
         document.getElementById('pdfZoomIn').onclick = () => {
             this.currentScale = Math.min(this.currentScale * 1.2, 3.0);
-            this.renderPDFPage(this.currentPage);
+            this.renderAllPages();
         };
 
         document.getElementById('pdfZoomOut').onclick = () => {
             this.currentScale = Math.max(this.currentScale / 1.2, 0.5);
-            this.renderPDFPage(this.currentPage);
+            this.renderAllPages();
         };
 
         // Extract all text button
@@ -508,6 +515,7 @@ class TypingEngine {
             this.textInput.value = text;
             overlay.classList.remove('active');
             this.updateLoadButton();
+            cleanup();
 
             // Show selection helper for long texts
             if (text.length > 500) {
@@ -522,114 +530,93 @@ class TypingEngine {
                 this.textInput.value = selectedText;
                 overlay.classList.remove('active');
                 this.updateLoadButton();
+                cleanup();
             }
         };
-
-        // Monitor text selection - use mouseup for better PDF text layer selection
-        const pdfTextLayer = document.getElementById('pdfTextLayer');
-        let isSelecting = false;
-
-        const checkSelection = () => {
+        // Monitor text selection globally while overlay is open
+        const updateSelectionUI = () => {
+            if (!overlay.classList.contains('active')) return;
             const selection = window.getSelection();
-            const selectedText = selection.toString().trim();
+            const selectedText = selection ? selection.toString().trim() : '';
             const useSelectedBtn = document.getElementById('pdfUseSelected');
-
             if (selectedText && selectedText.length > 10) {
                 useSelectedBtn.disabled = false;
-                document.getElementById('pdfSelectionInfo').textContent =
-                    `✓ Selected ${selectedText.length} characters`;
-                document.getElementById('pdfSelectionInfo').style.color = 'var(--accent-primary)';
-
-                // Add visual highlight to selected spans
-                const range = selection.getRangeAt(0);
-                const spans = pdfTextLayer.querySelectorAll('span');
-                spans.forEach(span => {
-                    if (selection.containsNode(span, true)) {
-                        span.style.backgroundColor = 'rgba(0, 122, 255, 0.2)';
-                    } else {
-                        span.style.backgroundColor = '';
-                    }
-                });
+                document.getElementById('pdfSelectionInfo').textContent = `✓ Selected ${selectedText.length} characters`;
+                document.getElementById('pdfSelectionInfo').style.color = 'var(--accent-blue)';
             } else {
                 useSelectedBtn.disabled = true;
-                document.getElementById('pdfSelectionInfo').textContent =
-                    'Select text in the PDF, then click "Use Selected Text"';
+                document.getElementById('pdfSelectionInfo').textContent = 'Select text in the PDF, then click "Use Selected Text"';
                 document.getElementById('pdfSelectionInfo').style.color = '';
-
-                // Clear highlights
-                const spans = pdfTextLayer.querySelectorAll('span');
-                spans.forEach(span => span.style.backgroundColor = '');
             }
         };
-
-        // Track mouse selection
-        pdfTextLayer.addEventListener('mousedown', () => {
-            isSelecting = true;
-            // Clear any existing selection highlights
-            const spans = pdfTextLayer.querySelectorAll('span');
-            spans.forEach(span => span.style.backgroundColor = '');
-        });
-
-        pdfTextLayer.addEventListener('mousemove', () => {
-            if (isSelecting) {
-                checkSelection();
-            }
-        });
-
-        pdfTextLayer.addEventListener('mouseup', () => {
-            isSelecting = false;
-            checkSelection();
-        });
-
-        // Check selection on touch and keyboard events
-        pdfTextLayer.addEventListener('touchend', checkSelection);
-        document.addEventListener('selectionchange', () => {
-            if (overlay.classList.contains('active')) {
-                checkSelection();
-            }
-        });
+        this._selectionHandler = updateSelectionUI;
+        document.addEventListener('selectionchange', this._selectionHandler);
     }
 
-    async renderPDFPage(pageNum) {
-        const page = await this.pdfDocument.getPage(pageNum);
-        const canvas = document.getElementById('pdfCanvas');
-        const context = canvas.getContext('2d');
+    async buildPDFPages() {
+        const container = document.getElementById('pdfPages');
+        container.innerHTML = '';
+        this.pageNodes = new Array(this.totalPages + 1);
 
-        // Calculate viewport
+        for (let i = 1; i <= this.totalPages; i++) {
+            const pageWrapper = document.createElement('div');
+            pageWrapper.className = 'pdf-page';
+            pageWrapper.dataset.page = i;
+
+            const canvas = document.createElement('canvas');
+            const textLayer = document.createElement('div');
+            textLayer.className = 'pdf-text-layer';
+
+            pageWrapper.appendChild(canvas);
+            pageWrapper.appendChild(textLayer);
+            container.appendChild(pageWrapper);
+
+            this.pageNodes[i] = { wrapper: pageWrapper, canvas, textLayer };
+        }
+
+        await this.renderAllPages();
+        if (this.observePages) this.observePages();
+        document.getElementById('pdfZoomLevel').textContent = Math.round(this.currentScale * 100) + '%';
+    }
+
+    async renderAllPages() {
+        for (let i = 1; i <= this.totalPages; i++) {
+            // eslint-disable-next-line no-await-in-loop
+            await this.renderPage(i);
+        }
+        document.getElementById('pdfZoomLevel').textContent = Math.round(this.currentScale * 100) + '%';
+    }
+
+    async renderPage(pageNum) {
+        const ref = this.pageNodes && this.pageNodes[pageNum];
+        if (!ref) return;
+        const { canvas, textLayer, wrapper } = ref;
+        const page = await this.pdfDocument.getPage(pageNum);
         const viewport = page.getViewport({ scale: this.currentScale });
+
+        const context = canvas.getContext('2d');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
+        canvas.style.width = viewport.width + 'px';
+        canvas.style.height = viewport.height + 'px';
+        wrapper.style.width = viewport.width + 'px';
+        wrapper.style.height = viewport.height + 'px';
 
-        // Render PDF page
-        await page.render({
-            canvasContext: context,
-            viewport: viewport
-        }).promise;
+        await page.render({ canvasContext: context, viewport }).promise;
 
-        // Extract and overlay text for selection
+        // Render text layer for selection
         const textContent = await page.getTextContent();
-        const textLayer = document.getElementById('pdfTextLayer');
         textLayer.innerHTML = '';
         textLayer.style.width = viewport.width + 'px';
         textLayer.style.height = viewport.height + 'px';
-
-        // Create selectable text layer
         const textDivs = [];
         pdfjsLib.renderTextLayer({
-            textContent: textContent,
+            textContent,
             container: textLayer,
-            viewport: viewport,
-            textDivs: textDivs
+            viewport,
+            textDivs,
+            enhanceTextSelection: true
         });
-
-        // Make text selectable by ensuring proper CSS
-        textLayer.style.pointerEvents = 'auto';
-        textLayer.style.userSelect = 'text';
-        textLayer.style.cursor = 'text';
-
-        // Update UI
-        document.getElementById('pdfPageNum').textContent = pageNum;
-        document.getElementById('pdfZoomLevel').textContent = Math.round(this.currentScale * 100) + '%';
     }
 
     async extractAllPDFText() {
